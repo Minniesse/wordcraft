@@ -342,6 +342,13 @@ fn odt_round_trip() {
     assert_eq!(back.core.creator, "Ada Writer");
 }
 
+/// The comment heading an exported `.tex` file (written into the user's file) names the upstream source repository.
+#[test]
+fn latex_export_heads_the_file_with_the_source_repository() {
+    let tex = String::from_utf8(export("tex", &sample()).unwrap().unwrap()).unwrap();
+    assert_eq!(tex.lines().next(), Some("% Written by WordCraft (https://github.com/storytold/wordcraft)."), "{tex}");
+}
+
 #[test]
 fn latex_round_trip() {
     check_round_trip("tex", true);

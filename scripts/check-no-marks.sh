@@ -64,8 +64,9 @@ check() {
   hits=$(git grep -I -i -E -n --null "$EXTRA_PATTERN" -- . ':!KATWORK.md' ':!scripts/check-no-marks.sh' \
            ':!scripts/katwork-marks' ':!.github/workflows/katwork.yml' \
          | awk -F'\0' -v allow="$data/allow" -v based="$line" '
-             BEGIN { while ((getline l < allow) > 0) { if (l !~ /^#/ && l != "") ok[l] = 1 } }
+             BEGIN { while ((getline l < allow) > 0) { sub(/\r$/, "", l); if (l !~ /^#/ && l != "") ok[l] = 1 } }
              { text = $3; for (i = 4; i <= NF; i++) text = text "\0" $i
+               sub(/\r$/, "", text)  # CRLF files (README, NOTICE, LICENSE in some forks)
                if (text != based && !(($1 "\t" text) in ok)) print $1 ":" $2 ": " text }')
   if [ -n "$hits" ]; then
     echo "check-no-marks: ArtCraft is named outside the allowed lines ($data/allow):"; echo "$hits"; fail=1
@@ -74,7 +75,7 @@ check() {
   # 4. README.md and NOTICE: the required line once, and no mark.
   for f in README.md NOTICE; do
     if [ ! -f "$f" ]; then echo "check-no-marks: $f is missing"; fail=1; continue; fi
-    if [ "$(grep -c -x -F -- "$line" "$f")" != 1 ]; then
+    if [ "$(tr -d '\r' < "$f" | grep -c -x -F -- "$line")" != 1 ]; then
       echo "check-no-marks: $f must hold this line exactly once: $line"; fail=1
     fi
     if grep -n -i -E 'artcraft-(logo|mark)|docs/brand|getartcraft\.com' "$f"; then
@@ -140,12 +141,13 @@ self_test() {
   fresh; mkdir -p docs/brand && echo x > docs/brand/LICENSE-brand.txt; expect 1 "a file under docs/brand"
   fresh; echo 'let u = "https://discord.gg/artcraft";' >> src/a.rs; expect 1 "the Discord invite"
   fresh; echo 'ui.label("Part of the Crafting Apps from the team");' >> src/a.rs; expect 1 "the Crafting Apps tagline"
-  fresh; echo 'const MARK_PATH: &str = "M104.28,49.49L81.55,0h-31.23";' >> src/a.rs; expect 1 "the mark path data"
+  fresh; echo 'const MARK_PATH: &str = "M104''.28,49.49L81.55,0h-31.23";' >> src/a.rs; expect 1 "the mark path data"
   fresh; echo 'const ARTCRAFT_MARK: &[u8] = &[];' >> src/a.rs; expect 1 "a mark identifier"
   fresh; printf 'Copyright (c) 2026 ArtCraft Team and the Demo contributors\n' > src/b.rs; expect 1 "an allowed line in another file"
   fresh; echo '<img src="docs/brand/artcraft-logo.svg">' >> README.md; expect 1 "the logo in README.md"
   fresh; sed -i '/^Based on/d' NOTICE; expect 1 "NOTICE without the Based on line"
   fresh; tail -1 README.md >> README.md; expect 1 "the Based on line twice"
+  fresh; sed -i 's/$/\r/' README.md NOTICE src/a.rs; expect 0 "CRLF line endings (allowed lines and the Based on line)"
   fresh; printf 'x\n' > assets/new.svg; expect 1 "an image missing from KATWORK.md"
   fresh; : > scripts/katwork-marks/hashes; cp "$tmp/mark" assets/x.bin; expect 0 "an empty hash list finds nothing (control)"
   cd / || return 1

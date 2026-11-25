@@ -265,23 +265,22 @@ fn focus_esc_collapses_the_selection_first_then_leaves() {
     assert!(!h.state().session.view.focus_mode, "the second Escape leaves Focus");
 }
 
-/// The Options toggle hides the community pill in the title bar; the backstage menu's
-/// Discord link hides with it — one setting, everywhere the link shows.
+/// This build links to no community: the title bar has no community button, the File page's menu no Discord link,
+/// and `ui.discord` is not a command.
 ///
-/// The File page fills the window in place of the title bar (`AppShell::page`, ch.C5), so the title bar's button is
-/// read in the editor window and the link on the File page.
+/// The File page fills the window in place of the title bar (`AppShell::page`, ch.C5), so the title bar is read in
+/// the editor window and the menu on the File page.
 #[test]
-fn the_community_button_off_hides_the_backstage_discord_link_too() {
-    for show in [true, false] {
-        let mut a = app();
-        a.ui.show_discord = show;
-        let mut h = harness(a);
-        h.run_steps(2);
-        assert_eq!(h.query_by_label(DISCORD_TITLE_NAME).is_some(), show, "show {show}: the title bar's community button follows the setting");
-        h.state_mut().run("ui.backstage", json!({"value": true})).unwrap();
-        h.run_steps(2);
-        assert_eq!(h.query_by_label(DISCORD_LINK_NAME).is_some(), show, "show {show}: the File page's link honors the same setting");
-    }
+fn no_community_button_in_the_title_bar_or_link_on_the_file_page() {
+    let mut h = harness(app());
+    h.run_steps(2);
+    assert!(h.query_by_label("Search commands and help").is_some(), "the title bar is drawn");
+    assert!(h.query_by_label(DISCORD_TITLE_NAME).is_none(), "no community button in the title bar");
+    h.state_mut().run("ui.backstage", json!({"value": true})).unwrap();
+    h.run_steps(2);
+    assert!(h.query_by_label("About").is_some(), "the File page's menu is drawn");
+    assert!(h.query_by_label(DISCORD_LINK_NAME).is_none(), "no community link on the File page");
+    assert!(h.state_mut().run("ui.discord", json!({})).is_err(), "ui.discord is not a command");
 }
 
 /// #766: started with nothing to open, the app shows File › Home (the Start screen) as Word
@@ -314,7 +313,7 @@ fn start_screen_shows_file_home_and_esc_leaves_no_document() {
     for id in ["format.bold", "text.insert", "file.save", "file.saveAs", "file.print", "edit.paste", "insert.table", "ui.print"] {
         assert!(!enabled(&ctx, id), "{id} is off with no document");
     }
-    for id in ["file.new", "file.open", "ui.backstage", "ui.tab", "ui.discord", "file.options", "ui.theme", "ui.statusCount"] {
+    for id in ["file.new", "file.open", "ui.backstage", "ui.tab", "file.options", "ui.theme", "ui.statusCount"] {
         assert!(enabled(&ctx, id), "{id} works with no document");
     }
     assert!(!crate::chrome::qat_enabled(&ctx, a, "file.save"));

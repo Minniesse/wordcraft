@@ -20,7 +20,18 @@ pub fn parse(text: &str) -> craft_flow::Flow {
 
 pub fn export(doc: &Document) -> String {
     match wordcraft_docx::to_shared_model(doc) {
-        Ok(shared) => craft_latex::export(&shared),
+        Ok(shared) => rehead(craft_latex::export(&shared)),
         Err(_) => String::new(),
+    }
+}
+
+/// The comment heading an exported file, written into the user's `.tex`: it names the source repository.
+const HEADER: &str = "% Written by WordCraft (https://github.com/storytold/wordcraft).";
+
+/// `tex` with `craft-latex`'s own header comment (which names a website) replaced by [`HEADER`].
+fn rehead(tex: String) -> String {
+    match tex.split_once('\n') {
+        Some((first, rest)) if first.starts_with("% Written by WordCraft") => format!("{HEADER}\n{rest}"),
+        _ => tex,
     }
 }
