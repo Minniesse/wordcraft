@@ -432,7 +432,7 @@ by the DesignCraft/GridCraft pilots. The callback contract is:
 - The suite has fourteen capture consumers. The eleven existing `craft-ui` consumers require
   CL-1 and CL-2F; only the DesignCraft/GridCraft pilots use the reviewed CL-2 provisional
   revision, and their adapters are reviewed before CL-2F freezes the API. DeckCraft, FigCraft
-  and ArtCraft Native keep contract-compatible local adapters; `ai-egui` has no capture path.
+  and the upstream team's native studio app keep contract-compatible local adapters; `ai-egui` has no capture path.
   Do not add `craft-ui` solely for capture; if DeckCraft/FigCraft later adopt it, WordCraft's
   adapter stays unchanged.
 

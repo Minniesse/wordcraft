@@ -8,11 +8,22 @@ use serde_json::{Value, json};
 use crate::packs;
 use crate::{CmdError, CmdResult, CommandSpec, Session, p};
 
+/// Without `font-download` there is no font store: only the list stays (it shows the languages and
+/// their proofing), and installing or removing a pack is an unknown command.
 pub fn specs() -> Vec<CommandSpec> {
-    vec![
+    let mut v = vec![
         CommandSpec::new("proof.packs", "Language Packs", "File › Options › Language", list)
             .params(r#"{"refresh"?: bool (fetch the pinned index again; only while downloading is on; in the app it runs in the background: see "refreshing")} — opens nothing. Returns {"packs": [{"locale", "name", "size" (bytes), "licence" (SPDX), "class", "source" (where the data comes from), "archive" (the download), "spelling", "hyphenation", "installed"}], "languages": [{"tags", "pack", "installed", "size", "proofing" (built_in, installed, own_dictionary, system_dictionary, install, grammar_built_in, not_available), "default"}] (Options › Language › Your languages), "installed": [{"locale", "name", "licence"}], "installing": [{"locale", "done", "total"} (bytes)], "refreshing": bool, "errors": {locale or "" (the list): message} (the last failure of each), "index_override": string|null (a test index in use instead of the pinned one), "network": bool (downloading on), "available": bool (a font store to install into)}"#)
             .pure(),
+    ];
+    v.extend(store_specs());
+    v
+}
+
+/// Installing and removing packs, which need the font store.
+#[cfg(feature = "font-download")]
+fn store_specs() -> Vec<CommandSpec> {
+    vec![
         CommandSpec::new("proof.installPack", "Install Language Pack", "File › Options › Language", install)
             .params(r#"{"locale": string (a pack's locale from proof.packs, like nl or pt-pt)} — downloads, verifies (sha256) and installs it; spelling and hyphenation in that language use it at once. Needs downloading on (only the person in the app can turn it on). Opens nothing. In the app it runs in the background and returns {"started": true}: follow it with proof.packs ("installing", then "installed" or "errors"); elsewhere it returns when installed."#)
             .pure()
@@ -24,10 +35,17 @@ pub fn specs() -> Vec<CommandSpec> {
     ]
 }
 
+#[cfg(not(feature = "font-download"))]
+fn store_specs() -> Vec<CommandSpec> {
+    Vec::new()
+}
+
+#[cfg(feature = "font-download")]
 fn available(_: &Session) -> Option<&'static str> {
     if cfg!(target_arch = "wasm32") { Some("Language packs aren't available in the browser") } else { None }
 }
 
+#[cfg(feature = "font-download")]
 fn locale_param(v: &Value) -> Result<String, CmdError> {
     let raw = p::str(v, "locale").ok_or_else(|| CmdError::Params("`locale` (a language tag like nl) is required".into()))?;
     packs::parse_locale(raw)
@@ -67,6 +85,7 @@ fn list(s: &mut Session, v: &Value) -> CmdResult {
     }))
 }
 
+#[cfg(feature = "font-download")]
 fn install(s: &mut Session, v: &Value) -> CmdResult {
     let locale = locale_param(v)?;
     if packs::is_installed(&locale) {
@@ -82,6 +101,7 @@ fn install(s: &mut Session, v: &Value) -> CmdResult {
     Ok(json!({"locale": done.locale, "name": done.name, "licence": done.licence, "installed": true}))
 }
 
+#[cfg(feature = "font-download")]
 fn remove(s: &mut Session, v: &Value) -> CmdResult {
     let locale = locale_param(v)?;
     packs::remove(&locale).map_err(CmdError::Failed)?;
@@ -120,6 +140,7 @@ mod tests {
         f(&mut s, &b)
     }
 
+    #[cfg(feature = "font-download")]
     #[test]
     fn lists_installs_and_removes_without_opening_anything() {
         with_backend(FixedBackend::sample(), |s, b| {
@@ -194,6 +215,7 @@ mod tests {
             });
         }
 
+        #[cfg(feature = "font-download")]
         #[test]
         fn an_installed_pack_is_a_row_with_remove() {
             with_backend(FixedBackend::sample(), |s, b| {
@@ -209,6 +231,7 @@ mod tests {
             });
         }
 
+        #[cfg(feature = "font-download")]
         #[test]
         fn document_languages_show_install_grammar_and_not_available() {
             with_backend(FixedBackend::sample(), |s, b| {
@@ -237,6 +260,7 @@ mod tests {
             });
         }
 
+        #[cfg(feature = "font-download")]
         #[test]
         fn valencian_text_is_on_the_valencian_packs_row() {
             let mut b = FixedBackend::sample();
@@ -323,6 +347,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "font-download")]
     #[test]
     fn unknown_and_hostile_locales_are_errors() {
         with_backend(FixedBackend::sample(), |s, b| {
@@ -345,6 +370,7 @@ mod tests {
         assert!(!b.network_on());
     }
 
+    #[cfg(feature = "font-download")]
     #[test]
     fn without_a_store_nothing_is_available() {
         let _g = LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -358,6 +384,7 @@ mod tests {
         assert!(s.run("proof.packs", &json!({"refresh": true})).is_err());
     }
 
+    #[cfg(feature = "font-download")]
     #[test]
     fn the_bar_offers_only_languages_with_a_pack() {
         with_backend(FixedBackend::sample(), |s, b| {
@@ -413,6 +440,7 @@ mod tests {
 
     /// An install or a removal in one window proofs every open document again, parked ones too:
     /// their layouts are keyed on the dictionaries' generation, not only their own revision.
+    #[cfg(feature = "font-download")]
     #[test]
     fn installing_proofs_parked_documents_again() {
         with_backend(FixedBackend::sample(), |s, b| {
@@ -466,6 +494,7 @@ mod tests {
     /// In the app an install runs on a thread, whoever asks: the command returns at once, and
     /// `proof.packs` shows it running, then installed. A removal of the same pack meanwhile is
     /// refused.
+    #[cfg(feature = "font-download")]
     #[test]
     fn in_the_app_installs_run_in_the_background() {
         let _g = LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);

@@ -13,6 +13,14 @@ workspace = true
 # ever makes receipt classification fail closed. Never enable this for a production build; the
 # UI's dev-dependencies enable it for its tests.
 test-support = []
+default = ["font-download", "ssip"]
+# Language packs downloaded by the suite's font store (craft-font-store, a network client: ureq with rustls).
+# Without it there is no font store: the pack-store commands are unknown and nothing is downloaded.
+font-download = ["dep:craft-font-store", "dep:craft-font-catalog"]
+# Read Aloud through Speech Dispatcher's socket (speech/ssip.rs, craft-ssip) on Linux and the BSDs, when no espeak
+# command is installed. The client connects to the address in SPEECHD_ADDRESS and can start `speech-dispatcher`.
+# Without it Read Aloud uses only the speech programs.
+ssip = ["dep:craft-ssip"]
 
 [dependencies]
 craft-mime.workspace = true
@@ -45,14 +53,14 @@ js-sys = "0.3"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 getrandom = { workspace = true }
 # Language packs (CP4.3): downloaded, verified and unpacked by the suite's font store.
-craft-font-store = { workspace = true }
-craft-font-catalog = { workspace = true }
+craft-font-store = { workspace = true, optional = true }
+craft-font-catalog = { workspace = true, optional = true }
 # The local time zone's offset for Insert ▸ Date & Time and date fields (#1707); the web asks the browser's Date.
 chrono = { workspace = true, features = ["clock"] }
 
 [target.'cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32")))'.dependencies]
 # Speech Dispatcher's wire framing for Read Aloud (speech/ssip.rs).
-craft-ssip = { workspace = true }
+craft-ssip = { workspace = true, optional = true }
 
 [target.'cfg(unix)'.dependencies]
 # O_NONBLOCK, so a path swapped for a named pipe can't block `open` (#3666).

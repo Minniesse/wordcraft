@@ -631,7 +631,8 @@ pub(crate) fn your_languages(app: &mut WordApp, ui: &mut Ui) {
     .shade(Shade::Faint)
     .show(ui);
     let backend = packs::backend();
-    if backend.is_none() {
+    // A build without `font-download` has no font store: it says nothing about one.
+    if backend.is_none() && cfg!(feature = "font-download") {
         let why = if cfg!(target_arch = "wasm32") {
             tl!("Language packs aren't available in the browser.")
         } else {
@@ -737,7 +738,9 @@ pub(crate) fn your_languages(app: &mut WordApp, ui: &mut Ui) {
         Notice::new(Tone::Bad, e).id_salt("list_error").show(ui);
     }
     let add = Row::new().show(ui, |ui, _| {
-        let add = clicked(&Button::new(tl!("Add a language…")).enabled(backend.is_some()).id_salt("add_language").show(ui));
+        // Without `font-download` nothing can be downloaded: no Add a language….
+        let add = cfg!(feature = "font-download")
+            && clicked(&Button::new(tl!("Add a language…")).enabled(backend.is_some()).id_salt("add_language").show(ui));
         if packs::fetching() {
             Spinner::new().show(ui);
             Text::new(tl!("Getting the list of languages…")).show(ui);
@@ -1474,6 +1477,8 @@ mod tests {
 
     /// Installs Dutch: on the engine's thread when another test's window moved installs there
     /// (`tick`), so waits for it.
+    // Runs `proof.installPack` / `proof.removePack`, which a build without `font-download` doesn't have.
+    #[cfg(feature = "font-download")]
     fn install_nl(a: &mut WordApp) {
         a.run("proof.installPack", json!({"locale": "nl"})).unwrap();
         for _ in 0..500 {
@@ -1492,9 +1497,26 @@ mod tests {
         labels(tree).iter().any(|l| l == label)
     }
 
+    /// A build without `font-download` (no font store) shows no control for downloading packs:
+    /// Options › Language has no Add a language… and no line about the missing store.
+    #[cfg(not(feature = "font-download"))]
+    #[test]
+    fn without_the_font_store_nothing_offers_a_download() {
+        let _g = BACKEND_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        let _reset = ResetBackend;
+        let (mut a, ctx, _backend) = options_app("language", false);
+        packs::set_backend(None);
+        let tree = settled(&mut a, &ctx);
+        let all = labels(&tree);
+        assert!(all.iter().any(|l| l == "Built in"), "the language list is still shown: {all:?}");
+        assert!(!all.iter().any(|l| l.starts_with("Add a language") || l.starts_with("Language packs ")), "{all:?}");
+    }
+
     /// A fresh install lists English, built in and the default; with Dutch installed, Dutch is a
     /// row with Installed and Remove; a document in Thai (no pack) says Not available yet, one in
     /// Polish (a pack, grammar built in) offers to install the spelling.
+    // Runs `proof.installPack` / `proof.removePack`, which a build without `font-download` doesn't have.
+    #[cfg(feature = "font-download")]
     #[test]
     fn your_languages_list_the_status_of_each() {
         let _g = BACKEND_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -1534,6 +1556,8 @@ mod tests {
 
     /// Installing and removing a pack show in Your languages at once (the rows follow the
     /// dictionaries' generation, which both bump).
+    // Runs `proof.installPack` / `proof.removePack`, which a build without `font-download` doesn't have.
+    #[cfg(feature = "font-download")]
     #[test]
     fn removing_a_pack_takes_its_remove_button_away() {
         let _g = BACKEND_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -1598,6 +1622,8 @@ mod tests {
     /// why and opens nothing); the person's own click does, and opens the picker. In the picker a row's
     /// Install follows the same rule: an agent's click leaves downloading off and says why, the person's
     /// click turns it on.
+    // Clicks Add a language…, which a build without `font-download` doesn't show.
+    #[cfg(feature = "font-download")]
     #[test]
     fn a_faked_click_on_add_a_language_never_turns_on_downloading() {
         let _g = BACKEND_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -1654,6 +1680,8 @@ mod tests {
 
     /// Set as default sets only the saved default proofing language (`review.language.preferred`); the
     /// document, its undo history, the redo stack and the modified flag are untouched.
+    // Runs `proof.installPack` / `proof.removePack`, which a build without `font-download` doesn't have.
+    #[cfg(feature = "font-download")]
     #[test]
     fn set_as_default_changes_new_texts_language() {
         let _g = BACKEND_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);

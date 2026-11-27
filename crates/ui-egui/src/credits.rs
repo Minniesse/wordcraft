@@ -65,8 +65,8 @@ pub fn credits() -> Credits {
     Credits::new(contributors, models, TOTAL_COMMITS)
 }
 
-/// The About tab's contents: name, blurb, version and build, and the project links in the old About's order (site,
-/// Discord, source), one to a line. A Nightly window names its channel, its exact feed version
+/// The About tab's contents: name, blurb (with the line naming the upstream app this build is based on), version and
+/// build, and the source link, one to a line. A Nightly window names its channel, its exact feed version
 /// and commit, and offers a link to report a problem.
 pub fn about_info() -> AboutInfo {
     about_info_for(crate::os_window::identity(), option_env!("WORDCRAFT_BUILD_SHA"))
@@ -81,7 +81,7 @@ fn about_text(identity: crate::os_window::LaunchIdentity, commit: Option<&str>) 
             let commit = commit.filter(|value| !value.is_empty()).unwrap_or("unavailable");
             (
                 crate::os_window::name_for(identity).to_string(),
-                "A free, open-source word processor written from scratch in Rust.\nPart of the Crafting Apps from the ArtCraft team.".to_string(),
+                "A free, open-source word processor written from scratch in Rust.\nBased on WordCraft by the ArtCraft team (https://github.com/storytold/wordcraft). This build is not an ArtCraft product.".to_string(),
                 format!("{version}\nCommit: {commit}"),
             )
         }
@@ -91,8 +91,11 @@ fn about_text(identity: crate::os_window::LaunchIdentity, commit: Option<&str>) 
             let version = crate::i18n::fmt(tl!("{version} ({build})"), &[("version", env!("CARGO_PKG_VERSION")), ("build", build)]);
             (
                 tl!("WordCraft").to_string(),
-                tl!("A free, open-source word processor written from scratch in Rust.\nPart of the Crafting Apps from the ArtCraft team.")
-                    .to_string(),
+                format!(
+                    "{}\n{}",
+                    tl!("A free, open-source word processor written from scratch in Rust."),
+                    tl!("Based on WordCraft by the ArtCraft team (https://github.com/storytold/wordcraft). This build is not an ArtCraft product.")
+                ),
                 version.to_string(),
             )
         }
@@ -104,8 +107,6 @@ fn about_info_for(identity: crate::os_window::LaunchIdentity, commit: Option<&st
     if identity == crate::os_window::LaunchIdentity::NightlyV1 {
         return AboutInfo::new(name, blurb, version)
             .links([
-                AboutLink::new("getartcraft.com/apps/wordcraft".to_string(), "https://getartcraft.com/apps/wordcraft"),
-                AboutLink::new("Join us on Discord: discord.gg/artcraft".to_string(), "https://discord.gg/artcraft"),
                 AboutLink::new("Source code: github.com/storytold/wordcraft".to_string(), "https://github.com/storytold/wordcraft"),
                 // Opens only after a click; nothing is collected or sent automatically.
                 AboutLink::new("Report a problem".to_string(), "https://github.com/storytold/wordcraft/issues"),
@@ -113,11 +114,7 @@ fn about_info_for(identity: crate::os_window::LaunchIdentity, commit: Option<&st
             .built_with("MIT OR Apache-2.0. Copyright (c) 2026 ArtCraft Team and the WordCraft contributors.".to_string());
     }
     AboutInfo::new(name, blurb, version)
-        .links([
-            AboutLink::new(tl!("getartcraft.com/apps/wordcraft").to_string(), "https://getartcraft.com/apps/wordcraft"),
-            AboutLink::new(tl!("Join us on Discord: discord.gg/artcraft").to_string(), "https://discord.gg/artcraft"),
-            AboutLink::new(tl!("Source code: github.com/storytold/wordcraft").to_string(), "https://github.com/storytold/wordcraft"),
-        ])
+        .links([AboutLink::new(tl!("Source code: github.com/storytold/wordcraft").to_string(), "https://github.com/storytold/wordcraft")])
         .built_with(tl!("MIT OR Apache-2.0. Copyright (c) 2026 ArtCraft Team and the WordCraft contributors.").to_string())
 }
 
@@ -161,5 +158,20 @@ mod nightly_about_tests {
         assert!(!stable.links.iter().any(|link| link.url == "https://github.com/storytold/wordcraft/issues"));
         let (name, _, _) = super::about_text(LaunchIdentity::Stable, Some(COMMIT));
         assert_eq!(name, "WordCraft");
+    }
+
+    /// The About of either channel says, as plain text, which upstream app this build is based on, and links to its
+    /// source only: no website or community link.
+    #[test]
+    fn about_names_the_upstream_app_and_links_to_its_source_only() {
+        const BASED_ON: &str =
+            "Based on WordCraft by the ArtCraft team (https://github.com/storytold/wordcraft). This build is not an ArtCraft product.";
+        for identity in [LaunchIdentity::NightlyV1, LaunchIdentity::Stable] {
+            let (_, blurb, _) = super::about_text(identity, Some(COMMIT));
+            assert_eq!(blurb.lines().filter(|line| *line == BASED_ON).count(), 1, "{identity:?}: {blurb}");
+            let about = super::about_info_for(identity, Some(COMMIT));
+            assert!(about.links.iter().all(|link| link.url.starts_with("https://github.com/storytold/wordcraft")), "{identity:?}");
+            assert!(about.links.iter().any(|link| link.url == "https://github.com/storytold/wordcraft"), "{identity:?}");
+        }
     }
 }
