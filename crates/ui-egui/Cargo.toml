@@ -9,9 +9,11 @@ description = "WordCraft egui front end (Word-style ribbon UI); swappable: nothi
 workspace = true
 
 [features]
-default = ["font-download"]
+default = ["font-download", "ssip"]
 # Language packs from the font store (the engine's `font-download`); without it Options › Language offers no download.
 font-download = ["wordcraft-engine/font-download", "wordcraft-zotero/font-download"]
+# Read Aloud through Speech Dispatcher (the engine's `ssip`).
+ssip = ["wordcraft-engine/ssip", "wordcraft-zotero/ssip"]
 
 [dependencies]
 # The craft libraries through their one facade (`craft::ui`, `craft::i18n`, `craft::window`, `craft::update`, ...),

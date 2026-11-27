@@ -206,7 +206,7 @@ fn every_reading_counts_as_a_new_one() {
     r.stop();
 }
 
-#[cfg(all(unix, not(target_os = "macos")))]
+#[cfg(all(unix, not(target_os = "macos"), feature = "ssip"))]
 #[test]
 fn a_sentence_that_never_began_says_so_not_another_program() {
     // No begin event within the queue bound: no other program need be involved, so the

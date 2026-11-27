@@ -14,9 +14,11 @@ path = "src/main.rs"
 workspace = true
 
 [features]
-default = ["font-download"]
+default = ["font-download", "ssip"]
 # The font store's language-pack downloader. The KatWork build turns it off (`--no-default-features`).
 font-download = ["wordcraft-engine/font-download", "wordcraft-mcp/font-download", "wordcraft-zotero/font-download"]
+# Read Aloud's Speech Dispatcher client. The KatWork build turns it off too.
+ssip = ["wordcraft-engine/ssip", "wordcraft-mcp/ssip", "wordcraft-zotero/ssip"]
 
 [dependencies]
 wordcraft-doc = { workspace = true }

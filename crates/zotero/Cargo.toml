@@ -9,8 +9,9 @@ description = "WordCraft Zotero integration: Zotero's word-processor wire protoc
 workspace = true
 
 [features]
-default = ["font-download"]
+default = ["font-download", "ssip"]
 font-download = ["wordcraft-engine/font-download"]
+ssip = ["wordcraft-engine/ssip"]
 
 [dependencies]
 wordcraft-doc = { workspace = true }

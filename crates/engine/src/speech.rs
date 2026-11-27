@@ -405,20 +405,23 @@ fn mac_default_voice_language() -> &'static str {
     })
 }
 
-#[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32")))]
+#[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32"), feature = "ssip"))]
 mod ssip;
 
 /// What Read Aloud says when the system has none of the speech programs it knows.
 #[cfg(not(target_arch = "wasm32"))]
-const MISSING_PROGRAM: &str = if cfg!(all(unix, not(target_os = "macos"))) {
+const MISSING_PROGRAM: &str = if cfg!(all(unix, not(target_os = "macos"), feature = "ssip")) {
     "Read Aloud needs a speech program: install espeak-ng or Speech Dispatcher from your distribution's packages"
+} else if cfg!(all(unix, not(target_os = "macos"))) {
+    // Without `ssip` Speech Dispatcher isn't used.
+    "Read Aloud needs a speech program: install espeak-ng from your distribution's packages"
 } else {
     "Read Aloud couldn't find the system's speech program"
 };
 
 /// Read Aloud's speed (1 = normal) as Speech Dispatcher's rate, -100 to 100 with 0 the voice's
 /// normal speed: the slowest speed is -50 and the fastest 100.
-#[cfg(any(all(unix, not(target_os = "macos")), test))]
+#[cfg(any(all(unix, not(target_os = "macos"), feature = "ssip"), test))]
 fn spd_rate(rate: f32) -> i32 {
     let rate = if rate.is_finite() { rate.clamp(MIN_RATE, MAX_RATE) } else { 1.0 };
     let scaled = if rate >= 1.0 { (rate - 1.0) / (MAX_RATE - 1.0) * 100.0 } else { (rate - 1.0) * 100.0 };
@@ -429,7 +432,7 @@ fn spd_rate(rate: f32) -> i32 {
 /// has one, region included (its voices are per region: `en-GB`, `pt-BR`). Its default language is
 /// its own setting (`en-US` unless configured), which SSIP can't ask for, so English is named too.
 /// `None` when Speech Dispatcher isn't installed.
-#[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32")))]
+#[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32"), feature = "ssip"))]
 fn speak_dispatcher(text: &str, lang: Option<&str>, rate: f32, changed: &dyn Fn() -> bool) -> Option<Spoken> {
     let stream = match ssip::connect(changed) {
         ssip::Connection::Open(s) => s,
@@ -443,7 +446,7 @@ fn speak_dispatcher(text: &str, lang: Option<&str>, rate: f32, changed: &dyn Fn(
 }
 
 /// How a sentence Speech Dispatcher handled ended, for the worker.
-#[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32")))]
+#[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32"), feature = "ssip"))]
 fn dispatcher_spoken(outcome: std::io::Result<ssip::Outcome>) -> Spoken {
     match outcome {
         Ok(ssip::Outcome::Done) => Spoken::Done,
@@ -455,16 +458,16 @@ fn dispatcher_spoken(outcome: std::io::Result<ssip::Outcome>) -> Spoken {
 }
 
 /// Why reading paused when another program cancelled or paused the sentence.
-#[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32")))]
+#[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32"), feature = "ssip"))]
 const HALTED_BY_OTHER: &str =
     "Speech Dispatcher kept stopping the sentence for another program (a screen reader, or a stop for every program): press Play to go on";
 
 /// Why reading paused when Speech Dispatcher never began the sentence.
-#[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32")))]
+#[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32"), feature = "ssip"))]
 const NOT_STARTED: &str =
     "Speech Dispatcher didn't start the sentence (other speech may be queued before it, or its speech module may be stuck): press Play to try again";
 
-#[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32")))]
+#[cfg(all(unix, not(target_os = "macos"), not(target_arch = "wasm32"), feature = "ssip"))]
 thread_local! {
     /// Neither espeak command was found during this reading (the worker thread lives as long as
     /// one reading): the next sentences go straight to Speech Dispatcher.
@@ -474,7 +477,7 @@ thread_local! {
 /// The language tag Speech Dispatcher is given for a sentence in `lang`: its language and region,
 /// as SSIP's `SET LANGUAGE` takes them (`sr-Latn-RS` gives `sr-RS`, `zh-Hant-TW` gives `zh-TW`),
 /// when it names a language (Word's `x-none` doesn't).
-#[cfg(any(all(unix, not(target_os = "macos"), not(target_arch = "wasm32")), test))]
+#[cfg(any(all(unix, not(target_os = "macos"), not(target_arch = "wasm32"), feature = "ssip"), test))]
 fn dispatcher_language(lang: Option<&str>) -> Option<String> {
     let tag = lang.and_then(plain_tag)?;
     let primary = primary_tag(tag)?;
@@ -856,7 +859,7 @@ enum Spoken {
     Done,
     Interrupted,
     /// Another program stopped the sentence: reading pauses on it, saying why.
-    #[cfg_attr(not(all(unix, not(target_os = "macos"))), allow(dead_code))]
+    #[cfg_attr(not(all(unix, not(target_os = "macos"), feature = "ssip")), allow(dead_code))]
     Halted(String),
     Failed(String),
 }
@@ -887,7 +890,7 @@ fn worker(shared: &(Mutex<Shared>, Condvar), backend: Backend) {
         // A new reading asks the system afresh which speech programs it has.
         if reading != Some(readings) {
             reading = Some(readings);
-            #[cfg(all(unix, not(target_os = "macos")))]
+            #[cfg(all(unix, not(target_os = "macos"), feature = "ssip"))]
             NO_ESPEAK.set(false);
         }
         let changed = || lock(m).generation != generation;
@@ -1022,7 +1025,10 @@ fn speak_with(text: &str, lang: Option<&str>, rate: f32, changed: &dyn Fn() -> b
     }
     #[cfg(all(unix, not(target_os = "macos")))]
     {
+        #[cfg(feature = "ssip")]
         let programs: &[&str] = if NO_ESPEAK.get() { &[] } else { &["espeak-ng", "espeak"] };
+        #[cfg(not(feature = "ssip"))]
+        let programs = ["espeak-ng", "espeak"];
         for prog in programs {
             let args = espeak_args(&wpm, lang);
             let voiced = args.iter().any(|a| a == "-v");
@@ -1049,7 +1055,7 @@ fn speak_with(text: &str, lang: Option<&str>, rate: f32, changed: &dyn Fn() -> b
     }
     let Some((mut child, voiced)) = child else {
         // Speech Dispatcher, which many desktops install without the espeak command.
-        #[cfg(all(unix, not(target_os = "macos")))]
+        #[cfg(all(unix, not(target_os = "macos"), feature = "ssip"))]
         if not_found {
             NO_ESPEAK.set(true);
             if let Some(spoken) = speak_dispatcher(text, lang, rate, changed) {

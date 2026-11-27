@@ -14,8 +14,9 @@ name = "wordcraft-web"
 path = "src/main.rs"
 
 [features]
-default = ["font-download"]
+default = ["font-download", "ssip"]
 font-download = ["wordcraft-engine/font-download", "wordcraft-ui-egui/font-download"]
+ssip = ["wordcraft-engine/ssip", "wordcraft-ui-egui/ssip"]
 
 [dependencies]
 wordcraft-engine = { workspace = true }
