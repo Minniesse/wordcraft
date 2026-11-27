@@ -1,0 +1,23 @@
+# <package> <native|wasm32> <katwork-features|-> <crate> <present|absent>: see scripts/katwork-profile.sh
+# The font store's language-pack downloader (craft-font-store, ureq with rustls; gate `font-download`).
+wordcraft-cli	native	-	craft-font-store	present
+wordcraft-cli	native	-	ureq	present
+wordcraft-cli	native	-	rustls	present
+wordcraft-cli	native	-	webpki-roots	present
+# Read Aloud's Speech Dispatcher client (gate `ssip`): its wire framing crate. The client itself is std::net
+# code in the engine, which cargo tree cannot see; the gate test (crates/engine/tests/katwork_profile.rs) checks it.
+wordcraft-cli	native	-	craft-ssip	present
+# The web build: the downloader and the Speech Dispatcher client are native only, so these rows are vacuous. The
+# web interface's font picker keeps craft's font manager, which holds the store's built-in index (craft-font-store).
+wordcraft-web	wasm32	-	ureq	absent
+wordcraft-web	wasm32	-	rustls	absent
+wordcraft-web	wasm32	-	webpki-roots	absent
+wordcraft-web	wasm32	-	craft-ssip	absent
+# Each gated library crate defaults its gates on too (an upstream build of the crate alone is unchanged).
+wordcraft-engine	native	-	craft-font-store	present
+wordcraft-engine	native	-	craft-ssip	present
+wordcraft-mcp	native	-	craft-font-store	present
+wordcraft-mcp	native	-	craft-ssip	present
+wordcraft-zotero	native	-	craft-font-store	present
+wordcraft-zotero	native	-	craft-ssip	present
+wordcraft-ui-egui	native	-	craft-ssip	present

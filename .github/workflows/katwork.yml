@@ -16,3 +16,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: bash scripts/check-no-marks.sh --self-test
       - run: bash scripts/check-no-marks.sh
+
+  katwork-profile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: 1.97.1
+      - name: The gated crates are not in the KatWork build graphs
+        run: bash scripts/katwork-profile.sh
+      - name: The gate test, with the gates off
+        # The test file compiles only with the gates off: fail if it ran no test (zero tests pass green).
+        run: |
+          set -o pipefail
+          cargo test --locked -p wordcraft-engine --no-default-features --test katwork_profile 2>&1 | tee katwork-profile-test.log
+          grep -E 'test result: ok\. [1-9][0-9]* passed' katwork-profile-test.log

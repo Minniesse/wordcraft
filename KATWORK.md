@@ -15,6 +15,30 @@ Based on WordCraft by the ArtCraft team (https://github.com/storytold/wordcraft)
 | Patch | Upstream PR |
 |---|---|
 | `chore(katwork): remove the ArtCraft marks` | not proposed upstream (the brand terms let a fork that proposes changes keep the marks; this one is a distributed modified version) |
+| `feat(katwork): font-download feature, on by default` | draft, not opened (in the fork PR body) |
+| `feat(katwork): ssip feature, on by default` | draft, not opened (in the fork PR body) |
+
+## The KatWork build
+
+Two Cargo features, each on by default so an upstream build is unchanged, are off in the KatWork build:
+
+- `font-download` (wordcraft-engine; forwarded by wordcraft-mcp, wordcraft-zotero, wordcraft-ui-egui, the CLI and the
+  web crate; the desktop app turns it on): the font store's language-pack downloader (craft-font-store, ureq with
+  rustls and webpki-roots). With it off there is no font store: `proof.installPack` and `proof.removePack` are unknown
+  commands, `proof.packs` lists no packs and refuses `refresh`, and Options › Language shows no Add a language… button
+  and no line about the store. The web build keeps craft's font manager for its font picker, which holds the store's
+  built-in index but no downloader.
+- `ssip` (wordcraft-engine; forwarded likewise): Read Aloud's Speech Dispatcher client (`speech/ssip.rs`, craft-ssip),
+  which connects to the address in `SPEECHD_ADDRESS` (any TCP host) and can start `speech-dispatcher`. With it off Read
+  Aloud uses only the speech programs (`espeak-ng`/`espeak` on Linux and the BSDs, `say` on macOS, PowerShell on
+  Windows).
+
+The CLI: `cargo build --locked --release -p wordcraft-cli --no-default-features`. The web build: trunk with
+`data-cargo-no-default-features` on `apps/wordcraft-web` (no extra features). `scripts/katwork-profile.sh` (CI job `katwork-profile`) checks that the gated crates are not
+in either build graph, and `crates/engine/tests/katwork_profile.rs` that the pack-store commands are unknown and that
+Read Aloud never connects to `SPEECHD_ADDRESS` or starts `speech-dispatcher` (the SSIP client is std::net code, which
+cargo tree cannot see). `language_packs::tests::without_the_font_store_nothing_offers_a_download` (wordcraft-ui-egui,
+run with its features off) checks the hidden button.
 
 ## The marks
 
