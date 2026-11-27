@@ -1622,6 +1622,8 @@ mod tests {
     /// why and opens nothing); the person's own click does, and opens the picker. In the picker a row's
     /// Install follows the same rule: an agent's click leaves downloading off and says why, the person's
     /// click turns it on.
+    // Clicks Add a language…, which a build without `font-download` doesn't show.
+    #[cfg(feature = "font-download")]
     #[test]
     fn a_faked_click_on_add_a_language_never_turns_on_downloading() {
         let _g = BACKEND_LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
