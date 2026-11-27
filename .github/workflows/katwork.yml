@@ -32,3 +32,9 @@ jobs:
           set -o pipefail
           cargo test --locked -p wordcraft-engine --no-default-features --test katwork_profile 2>&1 | tee katwork-profile-test.log
           grep -E 'test result: ok\. [1-9][0-9]* passed' katwork-profile-test.log
+      - name: The interface test, with the gates off
+        # Options › Language offers no download without `font-download`; this test compiles only with the gate off.
+        run: |
+          set -o pipefail
+          cargo test --locked -p wordcraft-ui-egui --no-default-features --lib without_the_font_store 2>&1 | tee katwork-ui-test.log
+          grep -E 'test result: ok\. [1-9][0-9]* passed' katwork-ui-test.log

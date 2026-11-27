@@ -21,3 +21,7 @@ wordcraft-mcp	native	-	craft-ssip	present
 wordcraft-zotero	native	-	craft-font-store	present
 wordcraft-zotero	native	-	craft-ssip	present
 wordcraft-ui-egui	native	-	craft-ssip	present
+# Each app forwards its gates to the crates it builds: a stray default would turn a gate back on there.
+wordcraft-web	wasm32	-	wordcraft-ui-egui/font-download	present
+wordcraft-web	wasm32	-	wordcraft-engine/font-download	present
+wordcraft-web	wasm32	-	wordcraft-engine/ssip	present
