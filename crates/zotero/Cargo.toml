@@ -8,6 +8,10 @@ description = "WordCraft Zotero integration: Zotero's word-processor wire protoc
 [lints]
 workspace = true
 
+[features]
+default = ["font-download"]
+font-download = ["wordcraft-engine/font-download"]
+
 [dependencies]
 wordcraft-doc = { workspace = true }
 wordcraft-engine = { workspace = true }

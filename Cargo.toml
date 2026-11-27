@@ -41,11 +41,13 @@ wordcraft-proof = { package = "craft-proof", git = "https://github.com/storytold
 craft-font-store = { git = "https://github.com/storytold/craft-libs", rev = "b436ae992591173ce53fdb1314421ba2d8897e49", version = "=0.1.0" }
 craft-font-catalog = { git = "https://github.com/storytold/craft-libs", rev = "b436ae992591173ce53fdb1314421ba2d8897e49", version = "=0.1.0" }
 craft-ssip = { git = "https://github.com/storytold/craft-libs", rev = "b436ae992591173ce53fdb1314421ba2d8897e49", version = "=0.1.0" }
-wordcraft-engine = { path = "crates/engine" }
-wordcraft-mcp = { path = "crates/mcp" }
-wordcraft-zotero = { path = "crates/zotero" }
+# Off here so each member chooses: the KatWork build turns the engine's network features off
+# (`--no-default-features`); every member that depends on these forwards them as defaults or turns them on.
+wordcraft-engine = { path = "crates/engine", default-features = false }
+wordcraft-mcp = { path = "crates/mcp", default-features = false }
+wordcraft-zotero = { path = "crates/zotero", default-features = false }
 wordcraft-control-key = { path = "crates/control-key" }
-wordcraft-ui-egui = { path = "crates/ui-egui" }
+wordcraft-ui-egui = { path = "crates/ui-egui", default-features = false }
 craft-codepage = { git = "https://github.com/storytold/craft-libs", rev = "b436ae992591173ce53fdb1314421ba2d8897e49", version = "=0.1.0" }
 craft = { git = "https://github.com/storytold/craft-libs", rev = "b436ae992591173ce53fdb1314421ba2d8897e49", version = "=0.1.0", default-features = false }
 craft-ui-test-kit = { git = "https://github.com/storytold/craft-libs", rev = "b436ae992591173ce53fdb1314421ba2d8897e49", version = "=0.1.0" }

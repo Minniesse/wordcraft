@@ -12,11 +12,11 @@ workspace = true
 
 [dependencies]
 wordcraft-doc = { workspace = true }
-wordcraft-engine = { workspace = true }
+wordcraft-engine = { workspace = true, features = ["font-download"] }
 wordcraft-proof = { workspace = true }
 # Fonts the user added (#582) load from the settings folder at start-up.
 wordcraft-fonts = { workspace = true }
-wordcraft-ui-egui = { workspace = true }
+wordcraft-ui-egui = { workspace = true, features = ["font-download"] }
 # The clipboard's PNG decoder.
 wordcraft-geom = { workspace = true, features = ["image"] }
 # The control key file's location (shared with the MCP bridge).

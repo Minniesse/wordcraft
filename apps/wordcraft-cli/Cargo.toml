@@ -13,6 +13,11 @@ path = "src/main.rs"
 [lints]
 workspace = true
 
+[features]
+default = ["font-download"]
+# The font store's language-pack downloader. The KatWork build turns it off (`--no-default-features`).
+font-download = ["wordcraft-engine/font-download", "wordcraft-mcp/font-download", "wordcraft-zotero/font-download"]
+
 [dependencies]
 wordcraft-doc = { workspace = true }
 wordcraft-engine = { workspace = true }

@@ -13,6 +13,10 @@ workspace = true
 name = "wordcraft-web"
 path = "src/main.rs"
 
+[features]
+default = ["font-download"]
+font-download = ["wordcraft-engine/font-download", "wordcraft-ui-egui/font-download"]
+
 [dependencies]
 wordcraft-engine = { workspace = true }
 wordcraft-ui-egui = { workspace = true }

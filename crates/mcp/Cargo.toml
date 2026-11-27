@@ -8,6 +8,10 @@ description = "WordCraft MCP server: every command as a tool, headless or bridge
 [lints]
 workspace = true
 
+[features]
+default = ["font-download"]
+font-download = ["wordcraft-engine/font-download"]
+
 [dependencies]
 wordcraft-doc = { workspace = true }
 wordcraft-engine = { workspace = true }

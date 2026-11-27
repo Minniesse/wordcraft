@@ -8,6 +8,11 @@ description = "WordCraft egui front end (Word-style ribbon UI); swappable: nothi
 [lints]
 workspace = true
 
+[features]
+default = ["font-download"]
+# Language packs from the font store (the engine's `font-download`); without it Options › Language offers no download.
+font-download = ["wordcraft-engine/font-download", "wordcraft-zotero/font-download"]
+
 [dependencies]
 # The craft libraries through their one facade (`craft::ui`, `craft::i18n`, `craft::window`, `craft::update`, ...),
 # at the workspace's one craft-libs pin.
